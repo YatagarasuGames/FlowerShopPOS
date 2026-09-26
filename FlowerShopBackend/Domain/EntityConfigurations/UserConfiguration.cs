@@ -1,0 +1,32 @@
+﻿using FlowerShop.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace FlowerShop.Domain.EntityConfigurations
+{
+    public class UserConfiguration : IEntityTypeConfiguration<User>
+    {
+        public void Configure(EntityTypeBuilder<User> builder)
+        {
+            builder.ToTable("users");
+
+            builder.HasKey(u => u.Id);
+
+            builder.Property(u => u.Username)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            builder.HasIndex(u => u.Username)
+                .IsUnique();
+
+            builder.Property(u => u.PasswordHash)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.HasOne(u => u.Role)
+                .WithMany()
+                .HasForeignKey(u => u.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
+    }
+}
