@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18-alpine
+    image: postgres:16-alpine
     container_name: flowershop-db
     restart: unless-stopped
     environment:
@@ -8,7 +8,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql
+      # Обязательно подпапка /data
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - internal_net
     deploy:
@@ -21,7 +22,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-  
+
   backend:
     build:
       context: ./FlowerShopBackend
@@ -31,9 +32,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-
-      - ConnectionStrings__DbConnection=Host=db;Port=5432;Database=flowers_db;Username=flower_user;Password=FLow3rDATaBase1337#;
-      - JwtSettings__Secret=aB6]X/|/0Kyo=X@;MI5Y)]VHImY1K_r,s^2h(tU.N,ptUGQE_**r?uZ7Q@y_DS!n{ihT5o^s=@6D_ev^6x67CS
+      # Динамическая сборка без открытых паролей:
+      - ConnectionStrings__DbConnection=Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
+      - JwtSettings__Secret=${JWT_SECRET}
       - JwtSettings__Issuer=FlowerShopAPI
       - JwtSettings__Audience=FlowerShopClient
       - JwtSettings__ExpiryHours=12
@@ -49,34 +50,3 @@ services:
         limits:
           cpus: '1.0'
           memory: 1024M
-  
-  frontend:
-    build:
-      context: ./FlowerShopFrontend
-      dockerfile: Dockerfile
-    container_name: flowershop_frontend
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/certs:/etc/nginx/certs:ro
-    depends_on:
-      - backend
-    networks:
-      - internal_net
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-
-volumes:
-  postgres_data:
-    driver: local
-  uploads_data:
-    driver: local
-
-networks:
-  internal_net:
-    driver: bridge
