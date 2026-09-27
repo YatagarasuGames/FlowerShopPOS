@@ -16,15 +16,21 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-// Если бэкенд вернул 401 — разлогиниваем пользователя
+// Перехват ответов: исключаем сам запрос авторизации из сброса страницы
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    const isLoginRequest = error.config?.url?.includes('/auth/login')
+
+    // Если 401 вернулся на любой другой запрос (не логин) — тогда сбрасываем сессию
+    if (error.response && error.response.status === 401 && !isLoginRequest) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
     }
+
     return Promise.reject(error)
   }
 )
